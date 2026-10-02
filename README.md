@@ -1,7 +1,175 @@
-# HHW RGB-D 深度处理项目
+# Depth Process Model
 
-本项目用于从 `/ssd/hhw/depth` 下的 5 个 ROS1 bag 中提取、处理并对比物理尺度深度数据。
-项目不会修改源 rosbag，也不会修改服务器上的官方模型仓库。
+**三视角 RGB-D 机器人策略的深度输入架构探索与深度修复评测。**
+
+本项目围绕两个问题展开：机器人策略如何编码和融合深度信息，以及传感器深度经过修复后，
+是否能改善实际任务成功率。实验从官方 RoboTwin ACT 出发，扩展到 π0.5，并结合真实 RGB-D
+数据的几何质量、动作误差和可视化证据分析处理效果。
+
+- **亮点一：不同深度输入模型架构的探索。** 在共同的官方 ACT 动作核心上比较四通道早期融合、
+  共享/逐视角双流 ResNet、XYZ 点图、Point Tokens、LingBot-Depth Tokens 和 Depth Transformer，
+  再将逐视角深度分支迁移到 π0.5。
+- **亮点二：深度图修复与部署效果验证。** 从干净 GT Depth 构造 RealSense 模拟噪声，使用
+  LingBot-Depth 补全孔洞，并通过训练深度 × 部署深度矩阵检验修复效果；同时提供真机深度质量证据。
+
+[完整部署结果与评测记录](docs/DEPLOYMENT_RESULTS_README.md) ·
+[ACT 架构定义](robotwin-official-act-rgbd/ARCHITECTURE_ZH.md) ·
+[ACT 代码与训练入口](robotwin-official-act-rgbd/README.md) ·
+[RGB-D 交互展示](https://expolrer.github.io/depth-process/)
+
+## 1. 深度输入模型架构探索
+
+### 官方 ACT 上的八种视觉前端
+
+ACT0 是三视角 RGB + joint 的官方 ACT 基线。ACT1–ACT7 在相同动作核心中增加不同深度表示：
+保持 action CVAE、Transformer encoder/decoder、action queries、动作头与官方 Mplib TOPP
+执行方式作为共同条件，比较视觉编码和融合方式。
+
+```mermaid
+flowchart LR
+    RGB["头部 / 左腕 / 右腕 RGB"] --> Frontend["可替换视觉前端 ACT0–ACT7"]
+    Depth["三视角 metric depth / XYZ / 深度 Tokens"] --> Frontend
+    Frontend --> Core["共同的官方 ACT Transformer"]
+    Joint["Joint + CVAE latent"] --> Core
+    Core --> Action["50-step action chunk"]
+    Action --> TOPP["官方 Mplib TOPP → RoboTwin 任务成功率"]
+```
+
+以下八种架构均使用各任务的 D0 数据训练至 **6000 epochs**，部署为 D0；ACT0 只读取 RGB。
+同一任务内使用共同的 100 个有效评测种子，两个任务分别训练各自的权重。
+
+| 架构 | 深度表示与融合方式 | `stack_blocks_two` 常规 | `hanging_mug` Easy |
+| --- | --- | ---: | ---: |
+| `ACT0_RGB` | 三视角共享 RGB ResNet18 + joint；RGB-only 基线 | 18% | 8% |
+| `ACT1_EARLY_RGBD` | 每视角 RGB + 单通道 metric depth，共享四通道 ResNet18 | 23% | **16%** |
+| `ACT2_DUAL_SHARED` | 共享 RGB ResNet18 + 共享 Depth ResNet18，Token 级后融合 | 7% | 10% |
+| `ACT3_DUAL_PER_VIEW` | 3 个 RGB + 3 个 Depth ResNet18，逐视角双流融合 | **31%** | 10% |
+| `ACT4_XYZMAP` | RGB ResNet18 + 深度反投影的相机坐标 XYZ 点图 | 20% | 7% |
+| `ACT5_POINT_TOKENS` | RGB ResNet18 + 深度反投影的 XYZ Point Tokens | 20% | 6% |
+| `ACT6_LINGBOT_DEPTH` | RGB ResNet18 + 冻结 LingBot-Depth v0.5 Tokens | 11% | 3% |
+| `ACT7_DEPTH_TRANSFORMER` | RGB ResNet18 + Depth Transformer Tokens | 16% | 11% |
+
+在这轮实验中，`stack_blocks_two` 的最高 ACT 成功率由 RGB 基线的 **18%** 提升到逐视角双流的
+**31%**，相差 **13 个百分点**；`hanging_mug` 的最高 ACT 成功率由 **8%** 提升到四通道早期融合的
+**16%**，相差 **8 个百分点**。两个任务的最优前端不同，说明深度表示与任务几何之间存在关联，
+增加更复杂的深度编码器也未必获得更高成功率。
+
+ACT3 的 `hanging_mug` 成绩来自新训练的 2-worker D0 权重。各架构参数量不同，当前结果反映
+相同训练 epoch 预算下的系统表现；单次训练与 100 轮评测尚不足以证明统计显著性。
+ACT7 改变的是深度编码器，动作生成器仍为 ACT Transformer。
+
+### 逐视角深度分支迁移到 VLA
+
+| 模型 | 输入与架构 | 训练预算 | `stack_blocks_two` 常规 | `hanging_mug` Easy |
+| --- | --- | ---: | ---: | ---: |
+| 官方 π0.5 JAX | 三视角 RGB + joint + prompt，全参微调 | 20000 steps | 63% | 未评测 |
+| `PI05_DUAL_PER_VIEW` | π0.5 + 三个独立 Depth ResNet18；D0 训练、D0 部署 | 20000 steps | 66% | 28% |
+| LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；RGB + joint + prompt | 30000 steps | 65% | 未评测 |
+
+`PI05_DUAL_PER_VIEW` 是显式深度输入方案；LingBot-VLA 2.0 在本次实验中使用 MoGe、LingBot-Depth
+和 DINO-Video 提供训练期几何/时序蒸馏监督，部署时不直接读取 RoboTwin GT Depth。
+官方 π0.5 与深度版 π0.5 的场景配置存在差异，66% 与 63% 的差值只作描述性比较。
+
+## 2. 深度图修复与跨环境部署
+
+### 干净、受损、修复三种深度输入
+
+| 深度环境 | 定义 | 实验用途 |
+| --- | --- | --- |
+| `D0` | 干净 GT metric depth | 深度输入架构筛选与理想几何基准 |
+| `D1` | 确定性的 RealSense D435/D405 模拟噪声深度 | 传感器退化与部署鲁棒性 |
+| `D3` | 保留 D1 有效像素，仅用 LingBot-Depth v0.5 填补 D1 空洞 | 传感器保真修复 |
+
+固定模型架构，分别用 D0、D1、D3 训练，再在 D0、D1、D3 部署，形成 3 × 3 矩阵。
+这能同时观察“训练时使用修复深度”和“部署时修复受损深度”的效果。
+D3 重叠区保留传感器数值，不意味着孔洞补全值具有零误差。
+
+**当前修复效果具有条件性。** `stack_blocks_two` Randomized 中，D0 训练的深度版 π0.5 从
+D1 部署的 **18%** 到 D3 部署的 **24%**；`hanging_mug` Easy 中，同类 D0 训练权重从 **34%**
+下降到 **26%**。因此首页展示完整矩阵，结合任务、架构和训练输入分析增益与下降。
+`stack_blocks_two` Randomized 的跨格种子集合不保证完全相同，差值仅作描述性比较。
+
+<details open>
+<summary><strong>stack_blocks_two 常规场景：ACT 与 π0.5</strong></summary>
+
+| 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
+| --- | --- | ---: | ---: | ---: |
+| `ACT3_DUAL_PER_VIEW` | D0 clean GT | 31% | 26% | 33% |
+| `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | 16% | 24% | 16% |
+| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 19% | 12% | 20% |
+| 官方 π0.5 JAX | RGB-only | 63% | 63% | 63% |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | 66% | 57% | 56% |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 55% | 60% | 58% |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 59% | 61% | 64% |
+
+ACT3 与深度版 π0.5 的各自矩阵使用 `100000–100099` 共 100 个有效种子。
+官方 π0.5 JAX 仅独立评测 RGB-only 的 63/100，D1/D3 列复用这一成绩。
+
+</details>
+
+<details>
+<summary><strong>stack_blocks_two Randomized：ACT 与 π0.5</strong></summary>
+
+| 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
+| --- | --- | ---: | ---: | ---: |
+| `ACT0–ACT7` | D0/D1/D3；ACT0 为 RGB-only | 0% | 0% | 0% |
+| 官方 π0.5 JAX | RGB-only | 21% | 21% | 21% |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | 15% | 18% | 24% |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 16% | 18% | 15% |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 17% | 21% | 24% |
+
+场景配置为 `demo_randomized_depth_20260924`。π0.5 每格完成 100 个 expert-valid episodes，
+有效性筛选后的种子集合不保证跨格相同。官方 JAX 的 D1/D3 列复用 RGB-only 的 21/100。
+ACT 汇总行沿用部署结果文档中确认的正式结论，逐项权重组合未在该行展开。
+
+</details>
+
+<details open>
+<summary><strong>hanging_mug Easy：ACT 与 π0.5</strong></summary>
+
+| 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
+| --- | --- | ---: | ---: | ---: |
+| `ACT1_EARLY_RGBD` | D0 clean GT | 16% | 未评测 | 未评测 |
+| `ACT1_EARLY_RGBD` | D1 RealSense noise | 15% | 10% | 11% |
+| `ACT1_EARLY_RGBD` | D3 LingBot sensor-fused | 13% | 13% | 13% |
+| `ACT3_DUAL_PER_VIEW` | D0 clean GT | 10% | 10% | 12% |
+| `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | 0% | 4% | 0% |
+| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 6% | 13% | 未完成 |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | 28% | 34% | 26% |
+
+场景配置为 `depth_master_clean`，完成单元共用同一批 100 个 held-out expert-valid seeds。
+ACT3 D3→D3 在源文档中为成功 5 次 / 已完成 74 轮，尚未取得正式结果。
+
+</details>
+
+<details>
+<summary><strong>hanging_mug Randomized：π0.5 与 ACT 实测状态</strong></summary>
+
+| 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
+| --- | --- | ---: | ---: | ---: |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | 18% | 18% | 16% |
+
+上述 π0.5 三格共用同一批 100 个 expert-valid held-out seeds。
+ACT0–ACT4 使用 D0 训练、D0 部署，实测均为 0/75，按预设规则提前停止并记 0%；
+ACT5、ACT6、ACT7 分别为 0/70、0/29、0/43，已停止，尚无正式成功率。
+这些提前停止或未完成记录不能写成实测 0/100。
+
+</details>
+
+### 评测口径与结果追溯
+
+- 成功率按 RoboTwin 原始任务成功谓词计算，控制执行采用官方 Mplib TOPP。
+- 指令划分为 `unseen`；每个正式完成单元为 100 轮，并校验逐 seed 计数与完成标记。
+- `hanging_mug` Easy 的八种 ACT 共用 100 个 held-out 有效种子；两个任务的种子集合不同。
+- `stack_blocks_two` 官方 RGB-only π0.5 使用 `demo_clean`，深度版使用 `demo_clean_depth`，
+  ACT3 使用 `depth_master_clean`；跨模型比较应保留这些配置差异。
+- 当前 D1/D3 正式成绩采用颜色顺序修正后的批次；无动作执行和旧 RGB/BGR 错配结果已排除。
+- 结果来源为 [DEPLOYMENT_RESULTS_README.md](docs/DEPLOYMENT_RESULTS_README.md)，
+  其中保存权重、种子 SHA256、批次路径、未完成状态与去重规则。
+
+[颜色通道审计与修复范围](docs/EVAL_INPUT_COLOR_ORDER_AUDIT_20260926.md) ·
+[ACT 历史执行计划](robotwin-official-act-rgbd/EXECUTION_PLAN_ZH.md) ·
+[早期 FairACT 探索记录](docs/robotwin_benchmark/ROBOTWIN_BENCHMARK_STATUS.md)
 
 ## RGB-D Depth Lab 在线展示
 
@@ -14,42 +182,11 @@
 
 [![RGB-D Depth Lab 项目指标总览](docs/qa-project-metrics.png)](https://expolrer.github.io/depth-process/?view=depth)
 
-在线页面包含 5 个数据集和 85 个完整同步视频，可在 Head、Left Wrist、Right Wrist 三视角下切换
-7 种深度处理方法，并对比对应的无 Prompt ACT 热力图、动作误差和执行腕目标 ROI 指标。
-页面静态资源位于 `docs/`，GitHub Pages 发布源应设置为 `main` 分支的 `/docs` 目录。
+真实数据展示覆盖 5 个 ROS1 bag、三视角相机和 85 个完整同步视频，可切换 7 种深度处理方法，
+并对比对应的无 Prompt ACT 热力图、动作误差和执行腕目标 ROI 指标。
+下方真实 RGB-D 的离线几何质量与代理指标，与上方 RoboTwin 在线任务成功率分别报告。
 
-## Official ACT RGB-D 重构计划（当前唯一执行路线）
-
-RoboTwin 策略实验已经重构为“官方 ACT 动作核心不变，只替换 RGB-D/几何视觉前端”的受控基准。
-正式训练固定使用 56 服务器的 H100，checkpoint 通过 SHA256 验收后转移到 AutoDL RTX 4090 D 做单环境、
-batch 1 在线评测。普通 `ACT0-5/7` 的正式评测准入线为 16GB 显存，
-`ACT6_LINGBOT_DEPTH` 为 24GB；为了在同一环境覆盖全部架构，推荐统一使用 24GB。
-
-[查看项目 README](robotwin-official-act-rgbd/README.md) ·
-[查看唯一执行计划](robotwin-official-act-rgbd/EXECUTION_PLAN_ZH.md) ·
-[查看机器可读状态机](robotwin-official-act-rgbd/execution_plan.json) ·
-[查看架构定义](robotwin-official-act-rgbd/ARCHITECTURE_ZH.md)
-
-当前严格阶段已改为 `Q0_RAPID_DEPTH_CHECK`：只在 `stack_blocks_two` 上并行训练 500 epochs 的
-`ACT0_RGB` 与 `ACT1_EARLY_RGBD`，再用相同 30-seed 子集快速评测。ACT1 只增加 metric depth
-第 4 通道，本轮不输入 validity，也不做 zero/shuffle 或噪声/修复深度。该结果只判断是否值得继续，
-不能替代后续 2000-epoch、100-episode 确认。workflow guard 会拒绝计划外架构、任务和预算。
-
-## RoboTwin RGB-D 策略基准（旧 FairACT 探索记录）
-
-RoboTwin 主数据集上的六种策略架构正在使用相同任务种子和每项 100 回合评测协议运行。
-当前快照已完成 10/36 个“架构 x 任务”评测：RGB + joint 的 A0 六项已完成；
-点云 DP3 的 A4 已完成 `pick_dual_bottles`、`place_a2b_left` 和 `place_a2b_right`，
-成功率分别为 61%、41% 和 47%；Action DiT 的 A5 已完成 `place_a2b_left`，成功率为 0%。
-A1/A2 共 12 个 30k 权重已完成训练并进入评测队列。服务器项目调度器现在只使用 GPU4、GPU5、GPU6。
-
-[查看实时快照](docs/robotwin_benchmark/ROBOTWIN_BENCHMARK_STATUS.md) ·
-[下载机器可读 JSON](docs/robotwin_benchmark/robotwin_benchmark_status.json)
-
-这些数字是旧 FairACT 管线的中间探索记录，不再作为架构结论，也不进入 OfficialACTRGBD 主结果表。
-后续训练和评测只能按照上方重构计划推进。
-
-## 项目指标总览
+## 真实 RGB-D 数据：离线质量与代理指标
 
 全量深度统计覆盖 5 个数据集、15 路相机流、14,731 个 RGB-D 相机帧和
 5,996,106,240 个像素。原始对齐深度有效率为 65.49%，深度中位数为 0.733 m，
