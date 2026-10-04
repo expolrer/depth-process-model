@@ -50,7 +50,7 @@ button, select, input { font: inherit; }
 
 .view-switcher {
   display: grid;
-  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
   width: min(1360px, 100%);
   margin-bottom: 16px;

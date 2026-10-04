@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>RoboTwin RGB-D 训练视频与部署结果</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><strong>Depth Process Model</strong><small>RoboTwin RGB-D 训练数据与部署结果</small></div></div>
+    <nav aria-label="项目导航"><a href="../">深度处理主页</a><a href="https://github.com/expolrer/depth-process-model">项目文档</a><a href="../DEPLOYMENT_RESULTS_README.md">完整结果</a></nav>
+  </header>
+  <main>
+    <section class="page-heading">
+      <div><p class="eyebrow">ROBOTWIN · TRAINING DATA</p><h1>三视角 RGB-D 视频</h1><p>同一训练轨迹的头部、左腕、右腕 RGB 与 D0/D1/D3 深度。视频展示输入差异；模型效果以任务成功率为准。</p></div>
+      <span class="count">2 个任务 · 6 段视频 · 30 FPS</span>
+    </section>
+
+    <section class="controls" aria-label="视频选择">
+      <div class="control-group"><span class="control-label">任务</span><div class="segmented" role="group" aria-label="选择任务"><button type="button" data-scene="stack_blocks_two">stack_blocks_two</button><button type="button" data-scene="hanging_mug">hanging_mug</button></div></div>
+      <div class="control-group"><span class="control-label">深度版本</span><div class="segmented" role="group" aria-label="选择深度版本"><button type="button" data-method="d0">D0 干净 GT</button><button type="button" data-method="d1">D1 传感器噪声</button><button type="button" data-method="d3">D3 LingBot 修复</button></div></div>
+    </section>
+
+    <section class="viewer" aria-label="所选训练视频">
+      <div class="section-heading"><div><p class="eyebrow" id="video-meta"></p><h2 id="video-title"></h2></div><a id="video-download" class="download" download><span aria-hidden="true">↓</span> 下载视频</a></div>
+      <video id="main-video" controls playsinline preload="metadata" poster="" aria-label="三视角 RGB-D 训练视频"></video>
+      <div class="legend"><span>上排：头部 / 左腕 / 右腕 RGB</span><span>下排：对应深度，暖色近、冷色远，黑色无效</span><span>每个相机的色标跨方法固定</span></div>
+    </section>
+
+    <section class="gallery" aria-label="全部训练视频"><div class="section-heading"><h2>全部视频</h2><span>点击图片切换播放</span></div><div id="gallery-grid" class="gallery-grid"></div></section>
+
+    <section class="results" aria-label="部署结果"><div class="section-heading"><div><p class="eyebrow">FORMAL EVALUATION</p><h2>部署成功率</h2></div><a href="../DEPLOYMENT_RESULTS_README.md">评测口径与完整记录 ↗</a></div>
+      <div id="stack-results" class="result-block"><h3>stack_blocks_two · 常规场景</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
+        <tr><td>ACT3 逐视角双流</td><td>D0</td><td>31%</td><td>26%</td><td>33%</td></tr>
+        <tr><td>ACT3 逐视角双流</td><td>D1</td><td>16%</td><td>24%</td><td>16%</td></tr>
+        <tr><td>ACT3 逐视角双流</td><td>D3</td><td>19%</td><td>12%</td><td>20%</td></tr>
+        <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>63%</td><td>63%*</td><td>63%*</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>66%</td><td>57%</td><td>56%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>55%</td><td>60%</td><td>58%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>59%</td><td>61%</td><td>64%</td></tr>
+      </tbody></table></div><p class="table-note">100 个有效种子；ACT3、官方 JAX 与深度版 π0.5 的任务配置存在差异。* RGB-only 的 D1/D3 列复用 D0 成绩，并非独立评测。</p>
+      <h3>stack_blocks_two · Randomized</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
+        <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>21%</td><td>21%*</td><td>21%*</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>15%</td><td>18%</td><td>24%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>16%</td><td>18%</td><td>15%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>17%</td><td>21%</td><td>24%</td></tr>
+      </tbody></table></div><p class="table-note">每格 100 个 expert-valid episodes；有效种子集合不保证跨格相同。* RGB-only 成绩复用。</p></div>
+      <div id="mug-results" class="result-block" hidden><h3>hanging_mug · Easy</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
+        <tr><td>ACT1 四通道</td><td>D0</td><td>16%</td><td>未评测</td><td>未评测</td></tr>
+        <tr><td>ACT1 四通道</td><td>D1</td><td>15%</td><td>10%</td><td>11%</td></tr>
+        <tr><td>ACT1 四通道</td><td>D3</td><td>13%</td><td>13%</td><td>13%</td></tr>
+        <tr><td>ACT3 逐视角双流</td><td>D0</td><td>10%</td><td>10%</td><td>12%</td></tr>
+        <tr><td>ACT3 逐视角双流</td><td>D1</td><td>0%</td><td>4%</td><td>0%</td></tr>
+        <tr><td>ACT3 逐视角双流</td><td>D3</td><td>6%</td><td>13%</td><td>6%</td></tr>
+        <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>21%</td><td>21%*</td><td>21%*</td></tr>
+        <tr><td>π0.5 四通道</td><td>D0</td><td>25%</td><td>27%</td><td>23%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>28%</td><td>34%</td><td>26%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>27%</td><td>22%</td><td>23%</td></tr>
+      </tbody></table></div><p class="table-note">各完成单元使用同一批 100 个 held-out expert-valid seeds。* RGB-only 成绩复用。</p>
+      <h3>hanging_mug · Randomized</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
+        <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>17%</td><td>17%*</td><td>17%*</td></tr>
+        <tr><td>π0.5 四通道</td><td>D0</td><td>16%</td><td>18%</td><td>18%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>18%</td><td>18%</td><td>16%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>19%</td><td>18%</td><td>14%</td></tr>
+      </tbody></table></div><p class="table-note">共用同一批 100 个 expert-valid seeds。* RGB-only 成绩复用。ACT0–ACT4 实测 0/75 后按预设规则停止；ACT5–ACT7 未达正式判定门槛。</p></div>
+    </section>
+    <footer>视频仅为每个任务的训练集 episode 0，不代表全部 50 条训练轨迹。D0 为仿真 GT；D1 从 D0 派生噪声；D3 从 D1 修复。<a href="media/manifest.json">媒体校验清单</a></footer>
+  </main>
+</body>
+</html>

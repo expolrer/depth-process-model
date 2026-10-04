@@ -13,6 +13,7 @@
   LingBot-Depth 补全孔洞，并通过训练深度 × 部署深度矩阵检验修复效果；同时提供真机深度质量证据。
 
 [完整部署结果与评测记录](docs/DEPLOYMENT_RESULTS_README.md) ·
+[双任务 D0/D1/D3 训练 RGB-D 视频](https://expolrer.github.io/depth-process-model/robotwin/) ·
 [ACT 架构定义](robotwin-official-act-rgbd/ARCHITECTURE_ZH.md) ·
 [ACT 代码与训练入口](robotwin-official-act-rgbd/README.md) ·
 [RGB-D 交互展示](https://expolrer.github.io/depth-process/)
@@ -62,7 +63,8 @@ ACT7 改变的是深度编码器，动作生成器仍为 ACT Transformer。
 
 | 模型 | 输入与架构 | 训练预算 | `stack_blocks_two` 常规 | `hanging_mug` Easy |
 | --- | --- | ---: | ---: | ---: |
-| 官方 π0.5 JAX | 三视角 RGB + joint + prompt，全参微调 | 20000 steps | 63% | 未评测 |
+| 官方 π0.5 JAX | 三视角 RGB + joint + prompt，全参微调 | 20000 steps | 63% | 21% |
+| `PI05_RGBD4` | π0.5 + 每视角 RGB-D 四通道早期融合；D0 训练、D0 部署 | 20000 steps | 未评测 | 25% |
 | `PI05_DUAL_PER_VIEW` | π0.5 + 三个独立 Depth ResNet18；D0 训练、D0 部署 | 20000 steps | 66% | 28% |
 | LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；RGB + joint + prompt | 30000 steps | 65% | 未评测 |
 
@@ -86,7 +88,8 @@ D3 重叠区保留传感器数值，不意味着孔洞补全值具有零误差�
 
 **当前修复效果具有条件性。** `stack_blocks_two` Randomized 中，D0 训练的深度版 π0.5 从
 D1 部署的 **18%** 到 D3 部署的 **24%**；`hanging_mug` Easy 中，同类 D0 训练权重从 **34%**
-下降到 **26%**。因此首页展示完整矩阵，结合任务、架构和训练输入分析增益与下降。
+下降到 **26%**。四通道 π0.5 在 `hanging_mug` Easy 的 D1→D3 部署则从 **27%** 降到 **23%**。
+因此首页展示完整矩阵，结合任务、架构和训练输入分析增益与下降。
 `stack_blocks_two` Randomized 的跨格种子集合不保证完全相同，差值仅作描述性比较。
 
 <details open>
@@ -134,11 +137,14 @@ ACT 汇总行沿用部署结果文档中确认的正式结论，逐项权重组�
 | `ACT1_EARLY_RGBD` | D3 LingBot sensor-fused | 13% | 13% | 13% |
 | `ACT3_DUAL_PER_VIEW` | D0 clean GT | 10% | 10% | 12% |
 | `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | 0% | 4% | 0% |
-| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 6% | 13% | 未完成 |
+| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 6% | 13% | 6% |
+| 官方 π0.5 JAX | RGB-only | 21% | 21%* | 21%* |
+| `PI05_RGBD4` | D0 clean GT | 25% | 27% | 23% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 28% | 34% | 26% |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 27% | 22% | 23% |
 
 场景配置为 `depth_master_clean`，完成单元共用同一批 100 个 held-out expert-valid seeds。
-ACT3 D3→D3 在源文档中为成功 5 次 / 已完成 74 轮，尚未取得正式结果。
+ACT3 D3→D3 已完成正式 100 轮。* 官方 π0.5 JAX 仅独立评测 RGB-only 的 D0 列，D1/D3 复用其成绩。
 
 </details>
 
@@ -147,9 +153,13 @@ ACT3 D3→D3 在源文档中为成功 5 次 / 已完成 74 轮，尚未取得正
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
+| 官方 π0.5 JAX | RGB-only | 17% | 17%* | 17%* |
+| `PI05_RGBD4` | D0 clean GT | 16% | 18% | 18% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 18% | 18% | 16% |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 19% | 18% | 14% |
 
-上述 π0.5 三格共用同一批 100 个 expert-valid held-out seeds。
+上述 π0.5 各实际评测单元共用同一批 100 个 expert-valid held-out seeds。
+* 官方 π0.5 JAX 的 D1/D3 列复用 RGB-only 的 17/100，不是独立评测。
 ACT0–ACT4 使用 D0 训练、D0 部署，实测均为 0/75，按预设规则提前停止并记 0%；
 ACT5、ACT6、ACT7 分别为 0/70、0/29、0/43，已停止，尚无正式成功率。
 这些提前停止或未完成记录不能写成实测 0/100。
@@ -170,6 +180,24 @@ ACT5、ACT6、ACT7 分别为 0/70、0/29、0/43，已停止，尚无正式成功
 [颜色通道审计与修复范围](docs/EVAL_INPUT_COLOR_ORDER_AUDIT_20260926.md) ·
 [ACT 历史执行计划](robotwin-official-act-rgbd/EXECUTION_PLAN_ZH.md) ·
 [早期 FairACT 探索记录](docs/robotwin_benchmark/ROBOTWIN_BENCHMARK_STATUS.md)
+
+## RoboTwin 训练 RGB-D 视频
+
+[打开双任务交互视频与部署结果页面](https://expolrer.github.io/depth-process-model/robotwin/)
+
+下方每个预览均来自**训练集 episode 0 的完整轨迹**，不是全部 50 条训练轨迹。两个任务分别
+展示 D0 干净 GT、由同一 D0 派生的 D1 RealSense 模拟噪声、以及从 D1 修复得到的 D3。
+每段视频上排为三视角 RGB，下排为对齐深度；同一任务同一视角的深度色标跨方法固定。
+视频展示深度输入质量，不应直接解释为模型关注区域或任务成功率。成功率以本页正式结果表为准。
+
+| 任务 | D0 干净 GT | D1 传感器噪声 | D3 LingBot 修复 |
+| --- | --- | --- | --- |
+| `stack_blocks_two` | [![stack D0](docs/robotwin/media/stack_blocks_two/episode0_d0.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d0) | [![stack D1](docs/robotwin/media/stack_blocks_two/episode0_d1.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d1) | [![stack D3](docs/robotwin/media/stack_blocks_two/episode0_d3.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d3) |
+| `hanging_mug` | [![mug D0](docs/robotwin/media/hanging_mug/episode0_d0.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d0) | [![mug D1](docs/robotwin/media/hanging_mug/episode0_d1.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d1) | [![mug D3](docs/robotwin/media/hanging_mug/episode0_d3.jpg)](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d3) |
+
+六段视频均为 30 FPS、三相机对齐、H.264 MP4；每段的 SHA256、帧数、有效深度比例与源文件
+记录在 [媒体清单](docs/robotwin/media/manifest.json)。可用
+[`scripts/export_training_rgbd_videos.py`](scripts/export_training_rgbd_videos.py) 从主数据集与派生深度重建。
 
 ## RGB-D Depth Lab 在线展示
 

@@ -4,7 +4,7 @@
 
 - 第 2 节并列展示 `stack_blocks_two` 常规场景与 `hanging_mug` Easy；第 3 节只比较 `stack_blocks_two`，第 4–5 节只比较 `hanging_mug`。两个任务的成功率不能直接相减
 - 指令划分：`unseen`
-- 正式评测：`stack_blocks_two` 常规场景使用 `100000–100099` 共 100 个 expert-valid seeds；`hanging_mug` Easy 使用同一批 100 个 held-out expert-valid seeds，但不是连续的 `100000–100099`
+- 正式评测：`stack_blocks_two` 常规场景使用 `100000–100099` 共 100 个 expert-valid seeds；`hanging_mug` Easy 使用同一批 100 个 held-out expert-valid seeds，但不是连续的 `100000–100099`。`hanging_mug` Randomized 各模型共用另一批 100 个有效种子；Easy 和 Randomized 的种子集合不能混用
 - 控制执行：官方 Mplib TOPP；线性 fallback 不作为正式结果
 - 成功判定：RoboTwin 原始任务成功谓词
 - 去重键：模型权重、训练输入、部署输入、种子集合和任务配置
@@ -33,8 +33,10 @@
 | `ACT5_POINT_TOKENS` | RGB ResNet18 + D0 XYZ Point Tokens | 6000 epochs | **20%** | **6%** |
 | `ACT6_LINGBOT_DEPTH` | RGB ResNet18 + 冻结 LingBot-Depth v0.5 Tokens；D0 部署 | 6000 epochs | **11%** | **3%** |
 | `ACT7_DEPTH_TRANSFORMER` | RGB ResNet18 + D0 Depth Transformer Tokens | 6000 epochs | **16%** | **11%** |
-| 官方 pi0.5 JAX | 三视角 RGB + joint + prompt，全参微调；`demo_clean` | 20000 steps | **63%** | 未评测 |
+| 官方 pi0.5 JAX | 三视角 RGB + joint + prompt，全参微调；两任务分别使用 `demo_clean`、`depth_master_clean` | 20000 steps | **63%** | **21%** |
+| `PI05_RGBD4`，D0 权重 | 每视角 RGB + D0 metric depth 四通道早期融合 | 20000 steps | 未评测 | **25%** |
 | `PI05_DUAL_PER_VIEW`，D0 权重 | pi0.5 + 三个独立 Depth ResNet18；D0 部署 | 20000 steps | **66%** | **28%** |
+| `PI05_DUAL_PER_VIEW`，D1 权重 | 同一双流架构；D1 训练、D0 部署 | 20000 steps | 未评测 | **27%** |
 | `PI05_DUAL_PER_VIEW`，D3 权重 | 同一架构；D3 训练、D3 部署 | 20000 steps | **64%** | 未评测 |
 | LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；三视角 RGB + joint + prompt | 30000 steps | **65%** | 未评测 |
 
@@ -102,19 +104,22 @@ ACT0 只读取 RGB，因此汇总行中的 D0/D1/D3 不表示 ACT0 使用深度�
 | `ACT1_EARLY_RGBD` | D3 LingBot sensor-fused | **13%** | **13%** | **13%** |
 | `ACT3_DUAL_PER_VIEW` | D0 clean GT | **10%** | **10%** | **12%** |
 | `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | **0%** | **4%** | **0%** |
-| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **6%** | **13%** | 未完成 |
+| `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **6%** | **13%** | **6%** |
 
-ACT3 D0、D1 矩阵位于 AutoDL `evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/`；ACT1 D1、D3 与 ACT3 D3 矩阵位于 `evaluations/hanging_mug_act1_act3_depth_matrix_20260930/state/`。ACT3 D3→D3 正在续评，已完成 **74 轮、成功 5 次**，尚无正式完成标记，不进入最终成功率或排名。ACT3 D1→D0 与 D1→D3 的 **0/100** 均为完成批次，不与未完成的零成功进度混淆。
+ACT3 D0、D1 矩阵位于 AutoDL `evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/`；ACT1 D1、D3 与 ACT3 D3 矩阵位于 `evaluations/hanging_mug_act1_act3_depth_matrix_20260930/state/`。ACT3 D3→D3 已续评至 **6/100**，有正式完成标记。ACT3 D1→D0 与 D1→D3 的 **0/100** 均为完成批次，不与未完成的零成功进度混淆。
 
 ### π0.5 跨深度部署
 
-`PI05_DUAL_PER_VIEW` 使用 `hanging_mug` D0 数据训练至 **20000 steps**。以下三项在 AutoDL 评满同一批 100 个 Easy held-out seeds，seed SHA256 与 ACT Easy 表一致；均有正式完成标记，逐 seed 计数与成功汇总一致。
+下表权重均针对 `hanging_mug` 训练至 **20000 steps**。AutoDL 各实际评测单元均评满同一批 100 个 Easy held-out seeds，seed SHA256 与 ACT Easy 表一致；均有 `SMOKE_COMPLETE`、`FORMAL_COMPLETE`、`final_result.json`，逐 seed 计数与成功汇总一致。正式日志每轮均有动作执行探针，未发现动作失效或输入颜色顺序失效标记。
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
+| 官方 pi0.5 JAX | RGB-only | **21%** | **21%** | **21%** |
+| `PI05_RGBD4` | D0 clean GT | **25%** | **27%** | **23%** |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | **28%** | **34%** | **26%** |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **27%** | **22%** | **23%** |
 
-记录位于 AutoDL `evaluations/hanging_mug_pi05_d0_matrix_20261001/state/d0_train__easy_d{0,1,3}_eval/`。三个部署单元共用权重 SHA256 `922b03d5e75ce0f73b64661f1fd257bfb1c896f0282bd8d585c4a36b20d062b1`。另一套四通道 RGB-D 早期融合 π0.5 权重仍在 6→AutoDL 传输，`evaluations/hanging_mug_pi05_rgbd4_matrix_20261002/state/` 的六项评测等待权重校验完成，尚无成功率；不能与本表双流深度分支权重的结果混用。
+官方 pi0.5 JAX 仅实际评测 RGB-only 输入 **21/100**；D1、D3 两列复用同一结果，**不是独立评测**。四通道早期融合与双流 Depth ResNet18 是不同架构，不能把两者差值单独归因于深度处理方法。原 D0 双流记录位于 AutoDL `evaluations/hanging_mug_pi05_d0_matrix_20261001/state/`，权重 SHA256 为 `922b03d5e75ce0f73b64661f1fd257bfb1c896f0282bd8d585c4a36b20d062b1`；新增记录分别位于 `evaluations/hanging_mug_pi05_official_20261002/state/`、`evaluations/hanging_mug_pi05_rgbd4_matrix_20261002/state/` 和 `evaluations/hanging_mug_pi05_d1_matrix_20261003/state/`。
 
 ## 5. `hanging_mug` Randomized：ACT 与 π0.5
 
@@ -137,13 +142,16 @@ AutoDL 已按 `demo_randomized_depth_20260924` 筛出同一批 **100 个 expert-
 
 ### π0.5 跨深度部署
 
-以下三项均使用 `hanging_mug` D0 数据训练的 **20000-step `PI05_DUAL_PER_VIEW` 权重**，任务配置为 `demo_randomized_depth_20260924`。三项均在 AutoDL 评满同一批 **100 个 expert-valid held-out seeds**，seed SHA256 为 `2081a9b67e0210e664999bdf96a77b30939544b48830df44af39587ce14d6c4c`，与上述 ACT Randomized 的固定种子文件一致；均有 `FORMAL_COMPLETE`、`SMOKE_COMPLETE` 与 `final_result.json`，逐 seed 成功计数一致。
+下表权重均针对 `hanging_mug` 训练至 **20000 steps**，任务配置为 `demo_randomized_depth_20260924`。AutoDL 各实际评测单元均评满同一批 **100 个 expert-valid held-out seeds**，seed SHA256 为 `2081a9b67e0210e664999bdf96a77b30939544b48830df44af39587ce14d6c4c`，与上述 ACT Randomized 的固定种子文件一致；均有 `FORMAL_COMPLETE`、`SMOKE_COMPLETE` 与 `final_result.json`，逐 seed 成功计数一致，动作执行探针通过。
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
+| 官方 pi0.5 JAX | RGB-only | **17%** | **17%** | **17%** |
+| `PI05_RGBD4` | D0 clean GT | **16%** | **18%** | **18%** |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | **18%** | **18%** | **16%** |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **19%** | **18%** | **14%** |
 
-记录位于 AutoDL `evaluations/hanging_mug_pi05_d0_matrix_20261001/state/d0_train__random_d{0,1,3}_eval/`，与 Easy 表共用同一权重 SHA256。ACT 的提前停止批次没有完整覆盖 100 个种子，比较时须保留其实际评测轮数。
+官方 pi0.5 JAX 仅实际评测 RGB-only 输入 **17/100**；D1、D3 两列复用同一结果，**不是独立评测**。原 D0 双流记录位于 AutoDL `evaluations/hanging_mug_pi05_d0_matrix_20261001/state/`，与 Easy 表共用同一权重 SHA256；新增记录位于上节列出的三个独立批次目录。ACT 的提前停止批次没有完整覆盖 100 个种子，比较时须保留其实际评测轮数。
 
 ## 6. 受影响的评测配置与重评位置
 
@@ -163,3 +171,14 @@ AutoDL 已按 `demo_randomized_depth_20260924` 筛出同一批 **100 个 expert-
 | 随机化 ACT3，D0/D1/D3 训练 | 六个 D1/D3 部署格，旧批次含完成与部分进度，未在上表展示 | AutoDL `stack_blocks_two_random_matrix_colorfix_20260926` |
 
 **不受此次错误影响：**各表的部署 D0 列、主表其他 D0 或 RGB-only 模型，以及离线 D1/D3 训练数据和 checkpoint。这里的“无效”仅针对预期的训练/部署深度定义匹配；不等于模型或权重本身无效。旧结果保留并加 `INVALID_INPUT_COLOR_ORDER` 标记，新结果写入独立目录，不接续旧 D1/D3 进度。详见 [颜色通道审计说明](EVAL_INPUT_COLOR_ORDER_AUDIT_20260926.md)。
+
+## 7. 双任务训练 RGB-D 视频
+
+[交互视频与成功率页面](https://expolrer.github.io/depth-process-model/robotwin/) 提供 `stack_blocks_two` 与 `hanging_mug` 各一条**训练集 episode 0 的完整轨迹**，每条轨迹分别展示 D0、D1、D3。视频上排为头部、左腕、右腕 RGB，下排为对应深度；每个任务、每个相机的深度色标跨三种方法固定，黑色表示无效深度。视频仅作训练输入的可视化，不代表全部 50 条训练轨迹，也不能替代第 2–5 节的部署成功率。
+
+| 训练任务 | D0 干净 GT | D1 RealSense 模拟噪声 | D3 LingBot 修复 |
+| --- | --- | --- | --- |
+| `stack_blocks_two` | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d0) | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d1) | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=stack_blocks_two&method=d3) |
+| `hanging_mug` | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d0) | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d1) | [播放](https://expolrer.github.io/depth-process-model/robotwin/?scene=hanging_mug&method=d3) |
+
+视频为 30 FPS、H.264 MP4，`stack_blocks_two` 310 帧，`hanging_mug` 337 帧。D0 来自 `/ssd/hhw/depth-model/datasets/master/`，D1 和 D3 分别来自 `/ssd/hhw/depth-model/datasets/derived/realsense_d1/` 与 `/ssd/hhw/depth-model/datasets/derived/lingbot_d3/`。逐文件 SHA256、深度有效像素比例和具体源文件见 [媒体清单](https://github.com/expolrer/depth-process-model/blob/main/docs/robotwin/media/manifest.json)；导出脚本见 [export_training_rgbd_videos.py](https://github.com/expolrer/depth-process-model/blob/main/scripts/export_training_rgbd_videos.py)。

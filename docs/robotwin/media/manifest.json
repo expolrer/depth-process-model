@@ -1,0 +1,212 @@
+[
+  {
+    "scene": "stack_blocks_two",
+    "method": "d0",
+    "episode": 0,
+    "frames": 310,
+    "fps": 30,
+    "video": "stack_blocks_two/episode0_d0.mp4",
+    "poster": "stack_blocks_two/episode0_d0.jpg",
+    "video_bytes": 307175,
+    "video_sha256": "077878ef7604ad36752660b74f23b92d448596dd102670de5d2b7939ac711d24",
+    "depth_valid_fraction": {
+      "head_camera": 1.0,
+      "left_camera": 1.0,
+      "right_camera": 1.0
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1951,
+        1.0726
+      ],
+      "left_camera": [
+        0.0186,
+        0.6791
+      ],
+      "right_camera": [
+        0.3613,
+        0.7247
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/stack_blocks_two/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/stack_blocks_two/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/stack_blocks_two/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  },
+  {
+    "scene": "stack_blocks_two",
+    "method": "d1",
+    "episode": 0,
+    "frames": 310,
+    "fps": 30,
+    "video": "stack_blocks_two/episode0_d1.mp4",
+    "poster": "stack_blocks_two/episode0_d1.jpg",
+    "video_bytes": 8423250,
+    "video_sha256": "3401873415bab747fb39738de323eeed51d7f93aae212dee9336de4f2c824d53",
+    "depth_valid_fraction": {
+      "head_camera": 0.92791,
+      "left_camera": 0.9275,
+      "right_camera": 0.85616
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1951,
+        1.0726
+      ],
+      "left_camera": [
+        0.0186,
+        0.6791
+      ],
+      "right_camera": [
+        0.3613,
+        0.7247
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/stack_blocks_two/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/stack_blocks_two/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/stack_blocks_two/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  },
+  {
+    "scene": "stack_blocks_two",
+    "method": "d3",
+    "episode": 0,
+    "frames": 310,
+    "fps": 30,
+    "video": "stack_blocks_two/episode0_d3.mp4",
+    "poster": "stack_blocks_two/episode0_d3.jpg",
+    "video_bytes": 833771,
+    "video_sha256": "556b60fdac65c81d91ad43627e6d43946bd9dce72eed9faab12fc0b8d1ee76bc",
+    "depth_valid_fraction": {
+      "head_camera": 1.0,
+      "left_camera": 1.0,
+      "right_camera": 1.0
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1951,
+        1.0726
+      ],
+      "left_camera": [
+        0.0186,
+        0.6791
+      ],
+      "right_camera": [
+        0.3613,
+        0.7247
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/stack_blocks_two/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/stack_blocks_two/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/stack_blocks_two/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  },
+  {
+    "scene": "hanging_mug",
+    "method": "d0",
+    "episode": 0,
+    "frames": 337,
+    "fps": 30,
+    "video": "hanging_mug/episode0_d0.mp4",
+    "poster": "hanging_mug/episode0_d0.jpg",
+    "video_bytes": 450449,
+    "video_sha256": "a45c9e563ae988ed24d6973bcb697d87a8b3cb7f6ee110d12c217ba9f263550b",
+    "depth_valid_fraction": {
+      "head_camera": 1.0,
+      "left_camera": 1.0,
+      "right_camera": 1.0
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1953,
+        1.0725
+      ],
+      "left_camera": [
+        0.0037,
+        0.7503
+      ],
+      "right_camera": [
+        0.0419,
+        0.743
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/hanging_mug/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/hanging_mug/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/hanging_mug/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  },
+  {
+    "scene": "hanging_mug",
+    "method": "d1",
+    "episode": 0,
+    "frames": 337,
+    "fps": 30,
+    "video": "hanging_mug/episode0_d1.mp4",
+    "poster": "hanging_mug/episode0_d1.jpg",
+    "video_bytes": 9422716,
+    "video_sha256": "8e200753c704e4816fad64dde6c60edb0820a4b1b31c784906b7961c085bfe20",
+    "depth_valid_fraction": {
+      "head_camera": 0.93058,
+      "left_camera": 0.84705,
+      "right_camera": 0.9151
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1953,
+        1.0725
+      ],
+      "left_camera": [
+        0.0037,
+        0.7503
+      ],
+      "right_camera": [
+        0.0419,
+        0.743
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/hanging_mug/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/hanging_mug/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/hanging_mug/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  },
+  {
+    "scene": "hanging_mug",
+    "method": "d3",
+    "episode": 0,
+    "frames": 337,
+    "fps": 30,
+    "video": "hanging_mug/episode0_d3.mp4",
+    "poster": "hanging_mug/episode0_d3.jpg",
+    "video_bytes": 674176,
+    "video_sha256": "1f504be7be7d0e68fc511b46508e0db0be40eecc0c876ee950887171417db20a",
+    "depth_valid_fraction": {
+      "head_camera": 1.0,
+      "left_camera": 1.0,
+      "right_camera": 1.0
+    },
+    "depth_scale_m": {
+      "head_camera": [
+        0.1953,
+        1.0725
+      ],
+      "left_camera": [
+        0.0037,
+        0.7503
+      ],
+      "right_camera": [
+        0.0419,
+        0.743
+      ]
+    },
+    "source_files": {
+      "d0": "/ssd/hhw/depth-model/datasets/master/hanging_mug/depth_master_clean/data/episode0.hdf5",
+      "d1": "/ssd/hhw/depth-model/datasets/derived/realsense_d1/hanging_mug/depth_master_clean/data/episode0.d1_realsense.hdf5",
+      "d3": "/ssd/hhw/depth-model/datasets/derived/lingbot_d3/hanging_mug/depth_master_clean/data/episode0.d3_lingbot_sensor_fused.hdf5"
+    }
+  }
+]
