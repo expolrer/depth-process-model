@@ -18,6 +18,10 @@
 [ACT 代码与训练入口](robotwin-official-act-rgbd/README.md) ·
 [RGB-D 交互展示](https://expolrer.github.io/depth-process/)
 
+目标实例检测、跨视角跟踪与人工复核工具已迁至
+[Embodied-data-auto-annotation-tool](https://github.com/expolrer/Embodied-data-auto-annotation-tool)。
+本仓库保留深度处理、质量评估及结果展示，不再包含自动标注工具的运行脚本。
+
 ## 1. 深度输入模型架构探索
 
 ### 官方 ACT 上的八种视觉前端
