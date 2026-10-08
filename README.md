@@ -68,9 +68,11 @@ ACT7 改变的是深度编码器，动作生成器仍为 ACT Transformer。
 | 模型 | 输入与架构 | 训练预算 | `stack_blocks_two` 常规 | `hanging_mug` Easy |
 | --- | --- | ---: | ---: | ---: |
 | 官方 π0.5 JAX | 三视角 RGB + joint + prompt，全参微调 | 20000 steps | 63% | 21% |
-| `PI05_RGBD4` | π0.5 + 每视角 RGB-D 四通道早期融合；D0 训练、D0 部署 | 20000 steps | 未评测 | 25% |
+| `PI05_RGBD4` | π0.5 + 每视角 RGB-D 四通道早期融合；D0 训练、D0 部署 | 20000 steps | 81% | 25% |
+| `PI05_RGBD4` | 同一四通道架构；D1 训练、D1 部署 | 20000 steps | 78% | 24% |
+| `PI05_RGBD4` | 同一四通道架构；D3 训练、D3 部署 | 20000 steps | 79% | 35% |
 | `PI05_DUAL_PER_VIEW` | π0.5 + 三个独立 Depth ResNet18；D0 训练、D0 部署 | 20000 steps | 66% | 28% |
-| LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；RGB + joint + prompt | 30000 steps | 65% | 未评测 |
+| LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；RGB + joint + prompt | 30000 steps | 65% | 14% |
 
 `PI05_DUAL_PER_VIEW` 是显式深度输入方案；LingBot-VLA 2.0 在本次实验中使用 MoGe、LingBot-Depth
 和 DINO-Video 提供训练期几何/时序蒸馏监督，部署时不直接读取 RoboTwin GT Depth。
@@ -105,6 +107,9 @@ D1 部署的 **18%** 到 D3 部署的 **24%**；`hanging_mug` Easy 中，同类 
 | `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | 16% | 24% | 16% |
 | `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 19% | 12% | 20% |
 | 官方 π0.5 JAX | RGB-only | 63% | 63% | 63% |
+| `PI05_RGBD4` | D0 clean GT | 81% | 76% | 80% |
+| `PI05_RGBD4` | D1 RealSense noise | 79% | 78% | 79% |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | 73% | 75% | 79% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 66% | 57% | 56% |
 | `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 55% | 60% | 58% |
 | `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 59% | 61% | 64% |
@@ -121,6 +126,9 @@ ACT3 与深度版 π0.5 的各自矩阵使用 `100000–100099` 共 100 个有�
 | --- | --- | ---: | ---: | ---: |
 | `ACT0–ACT7` | D0/D1/D3；ACT0 为 RGB-only | 0% | 0% | 0% |
 | 官方 π0.5 JAX | RGB-only | 21% | 21% | 21% |
+| `PI05_RGBD4` | D0 clean GT | 29% | 29% | 28% |
+| `PI05_RGBD4` | D1 RealSense noise | 28% | 30% | 30% |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | 29% | 37% | 32% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 15% | 18% | 24% |
 | `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 16% | 18% | 15% |
 | `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 17% | 21% | 24% |
@@ -136,7 +144,7 @@ ACT 汇总行沿用部署结果文档中确认的正式结论，逐项权重组�
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
-| `ACT1_EARLY_RGBD` | D0 clean GT | 16% | 未评测 | 未评测 |
+| `ACT1_EARLY_RGBD` | D0 clean GT | 16% | 8% | 8% |
 | `ACT1_EARLY_RGBD` | D1 RealSense noise | 15% | 10% | 11% |
 | `ACT1_EARLY_RGBD` | D3 LingBot sensor-fused | 13% | 13% | 13% |
 | `ACT3_DUAL_PER_VIEW` | D0 clean GT | 10% | 10% | 12% |
@@ -144,8 +152,13 @@ ACT 汇总行沿用部署结果文档中确认的正式结论，逐项权重组�
 | `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 6% | 13% | 6% |
 | 官方 π0.5 JAX | RGB-only | 21% | 21%* | 21%* |
 | `PI05_RGBD4` | D0 clean GT | 25% | 27% | 23% |
+| `PI05_RGBD4` | D1 RealSense noise | 26% | 24% | 26% |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | 30% | 32% | 35% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 28% | 34% | 26% |
 | `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 27% | 22% | 23% |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 25% | 25% | 24% |
+
+LingBot-VLA 2.0：**14/100 = 14%**。
 
 场景配置为 `depth_master_clean`，完成单元共用同一批 100 个 held-out expert-valid seeds。
 ACT3 D3→D3 已完成正式 100 轮。* 官方 π0.5 JAX 仅独立评测 RGB-only 的 D0 列，D1/D3 复用其成绩。
@@ -159,8 +172,13 @@ ACT3 D3→D3 已完成正式 100 轮。* 官方 π0.5 JAX 仅独立评测 RGB-on
 | --- | --- | ---: | ---: | ---: |
 | 官方 π0.5 JAX | RGB-only | 17% | 17%* | 17%* |
 | `PI05_RGBD4` | D0 clean GT | 16% | 18% | 18% |
+| `PI05_RGBD4` | D1 RealSense noise | 25% | 20% | 16% |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | 19% | 20% | 22% |
 | `PI05_DUAL_PER_VIEW` | D0 clean GT | 18% | 18% | 16% |
 | `PI05_DUAL_PER_VIEW` | D1 RealSense noise | 19% | 18% | 14% |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | 14% | 22% | 15% |
+
+LingBot-VLA 2.0：**5/100 = 5%**。
 
 上述 π0.5 各实际评测单元共用同一批 100 个 expert-valid held-out seeds。
 * 官方 π0.5 JAX 的 D1/D3 列复用 RGB-only 的 17/100，不是独立评测。
@@ -175,8 +193,8 @@ ACT5、ACT6、ACT7 分别为 0/70、0/29、0/43，已停止，尚无正式成功
 - 成功率按 RoboTwin 原始任务成功谓词计算，控制执行采用官方 Mplib TOPP。
 - 指令划分为 `unseen`；每个正式完成单元为 100 轮，并校验逐 seed 计数与完成标记。
 - `hanging_mug` Easy 的八种 ACT 共用 100 个 held-out 有效种子；两个任务的种子集合不同。
-- `stack_blocks_two` 官方 RGB-only π0.5 使用 `demo_clean`，深度版使用 `demo_clean_depth`，
-  ACT3 使用 `depth_master_clean`；跨模型比较应保留这些配置差异。
+- `stack_blocks_two` 官方 RGB-only π0.5 使用 `demo_clean`；深度输入模型按各自任务配置评测。
+  跨模型比较应保留场景配置差异。
 - 当前 D1/D3 正式成绩采用颜色顺序修正后的批次；无动作执行和旧 RGB/BGR 错配结果已排除。
 - 结果来源为 [DEPLOYMENT_RESULTS_README.md](docs/DEPLOYMENT_RESULTS_README.md)，
   其中保存权重、种子 SHA256、批次路径、未完成状态与去重规则。
