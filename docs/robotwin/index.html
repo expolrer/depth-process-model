@@ -33,23 +33,29 @@
     <section class="gallery" aria-label="全部训练视频"><div class="section-heading"><h2>全部视频</h2><span>点击图片切换播放</span></div><div id="gallery-grid" class="gallery-grid"></div></section>
 
     <section class="results" aria-label="部署结果"><div class="section-heading"><div><p class="eyebrow">FORMAL EVALUATION</p><h2>部署成功率</h2></div><a href="../DEPLOYMENT_RESULTS_README.md">评测口径与完整记录 ↗</a></div>
-      <div id="stack-results" class="result-block"><h3>stack_blocks_two · 常规场景</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
+      <div id="stack-results" class="result-block"><h3>stack_blocks_two · 常规场景</h3><p class="table-note">统一 π0.5 重评：D0 训练、D0 部署时，四通道 77% 优于逐视角双流 55%；ACT 与官方 RGB-only 模型是不同协议的历史参考。</p><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
         <tr><td>ACT3 逐视角双流</td><td>D0</td><td>31%</td><td>26%</td><td>33%</td></tr>
         <tr><td>ACT3 逐视角双流</td><td>D1</td><td>16%</td><td>24%</td><td>16%</td></tr>
         <tr><td>ACT3 逐视角双流</td><td>D3</td><td>19%</td><td>12%</td><td>20%</td></tr>
         <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>63%</td><td>63%*</td><td>63%*</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>66%</td><td>57%</td><td>56%</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>55%</td><td>60%</td><td>58%</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>59%</td><td>61%</td><td>64%</td></tr>
-      </tbody></table></div><p class="table-note">100 个有效种子；ACT3、官方 JAX 与深度版 π0.5 的任务配置存在差异。* RGB-only 的 D1/D3 列复用 D0 成绩，并非独立评测。</p>
+        <tr><td>π0.5 四通道</td><td>D0</td><td>77%</td><td>80%</td><td>81%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D1</td><td>79%</td><td>77%</td><td>77%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D3</td><td>79%</td><td>77%</td><td>77%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>55%</td><td>55%</td><td>58%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>56%</td><td>59%</td><td>61%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>64%</td><td>66%</td><td>65%</td></tr>
+      </tbody></table></div><p class="table-note">深度版 π0.5 每格为同一批 100 个有效种子；部署 D0/D1/D3 的最高观测值分别是四通道 79%（D1 或 D3 训练）、80%（D0 训练）、81%（D0 训练）。* RGB-only 的 D1/D3 列复用 D0 成绩，并非独立评测。</p>
       <h3>stack_blocks_two · Randomized</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
         <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>21%</td><td>21%*</td><td>21%*</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>15%</td><td>18%</td><td>24%</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>16%</td><td>18%</td><td>15%</td></tr>
-        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>17%</td><td>21%</td><td>24%</td></tr>
-      </tbody></table></div><p class="table-note">每格 100 个 expert-valid episodes；有效种子集合不保证跨格相同。* RGB-only 成绩复用。</p></div>
+        <tr><td>π0.5 四通道</td><td>D0</td><td>24%</td><td>25%</td><td>27%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D1</td><td>32%</td><td>28%</td><td>34%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D3</td><td>28%</td><td>31%</td><td>27%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D0</td><td>21%</td><td>20%</td><td>21%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D1</td><td>19%</td><td>18%</td><td>18%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>24%</td><td>20%</td><td>22%</td></tr>
+      </tbody></table></div><p class="table-note">深度版 π0.5 每格共用另一批 100 个有效种子；部署 D0/D1/D3 的最高观测值分别是四通道 32%（D1 训练）、31%（D3 训练）、34%（D1 训练）。* RGB-only 成绩复用。</p></div>
       <div id="mug-results" class="result-block" hidden><h3>hanging_mug · Easy</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
-        <tr><td>ACT1 四通道</td><td>D0</td><td>16%</td><td>未评测</td><td>未评测</td></tr>
+        <tr><td>ACT1 四通道</td><td>D0</td><td>16%</td><td>8%</td><td>8%</td></tr>
         <tr><td>ACT1 四通道</td><td>D1</td><td>15%</td><td>10%</td><td>11%</td></tr>
         <tr><td>ACT1 四通道</td><td>D3</td><td>13%</td><td>13%</td><td>13%</td></tr>
         <tr><td>ACT3 逐视角双流</td><td>D0</td><td>10%</td><td>10%</td><td>12%</td></tr>
@@ -57,14 +63,20 @@
         <tr><td>ACT3 逐视角双流</td><td>D3</td><td>6%</td><td>13%</td><td>6%</td></tr>
         <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>21%</td><td>21%*</td><td>21%*</td></tr>
         <tr><td>π0.5 四通道</td><td>D0</td><td>25%</td><td>27%</td><td>23%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D1</td><td>26%</td><td>24%</td><td>26%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D3</td><td>30%</td><td>32%</td><td>35%</td></tr>
         <tr><td>π0.5 逐视角双流</td><td>D0</td><td>28%</td><td>34%</td><td>26%</td></tr>
         <tr><td>π0.5 逐视角双流</td><td>D1</td><td>27%</td><td>22%</td><td>23%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>25%</td><td>25%</td><td>24%</td></tr>
       </tbody></table></div><p class="table-note">各完成单元使用同一批 100 个 held-out expert-valid seeds。* RGB-only 成绩复用。</p>
       <h3>hanging_mug · Randomized</h3><div class="table-wrap"><table><thead><tr><th>模型</th><th>训练深度</th><th>部署 D0</th><th>部署 D1</th><th>部署 D3</th></tr></thead><tbody>
         <tr><td>官方 π0.5 JAX</td><td>RGB-only</td><td>17%</td><td>17%*</td><td>17%*</td></tr>
         <tr><td>π0.5 四通道</td><td>D0</td><td>16%</td><td>18%</td><td>18%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D1</td><td>25%</td><td>20%</td><td>16%</td></tr>
+        <tr><td>π0.5 四通道</td><td>D3</td><td>19%</td><td>20%</td><td>22%</td></tr>
         <tr><td>π0.5 逐视角双流</td><td>D0</td><td>18%</td><td>18%</td><td>16%</td></tr>
         <tr><td>π0.5 逐视角双流</td><td>D1</td><td>19%</td><td>18%</td><td>14%</td></tr>
+        <tr><td>π0.5 逐视角双流</td><td>D3</td><td>14%</td><td>22%</td><td>15%</td></tr>
       </tbody></table></div><p class="table-note">共用同一批 100 个 expert-valid seeds。* RGB-only 成绩复用。ACT0–ACT4 实测 0/75 后按预设规则停止；ACT5–ACT7 未达正式判定门槛。</p></div>
     </section>
     <footer>视频仅为每个任务的训练集 episode 0，不代表全部 50 条训练轨迹。D0 为仿真 GT；D1 从 D0 派生噪声；D3 从 D1 修复。<a href="media/manifest.json">媒体校验清单</a></footer>

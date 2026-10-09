@@ -7,11 +7,11 @@
 - 正式评测：`stack_blocks_two` 常规场景使用 `100000–100099` 共 100 个 expert-valid seeds；`hanging_mug` Easy 使用同一批 100 个 held-out expert-valid seeds，但不是连续的 `100000–100099`。`hanging_mug` Randomized 各模型共用另一批 100 个有效种子；Easy 和 Randomized 的种子集合不能混用
 - 控制执行：官方 Mplib TOPP；线性 fallback 不作为正式结果
 - 成功判定：RoboTwin 原始任务成功谓词
-- 去重键：模型权重、训练输入、部署输入、种子集合和任务配置
-- 去重规则：同一键只保留时间最新、通过完成标记与动作运动门禁、且没有 `INVALID_INPUT_COLOR_ORDER` 标记的正式批次
+- 去重键：模型权重、训练输入、部署输入、种子集合、任务配置和评测协议版本
+- 去重规则：只在上述键完全相同时去重；历史评测与统一重评不因时间先后而混合或相互覆盖
 - 排除项：smoke、preflight、正常中断且未满 100 个种子的结果、无机械臂运动结果和诊断结果。第 5 节的预设“75 轮零成功即停止”另行标明实测轮数，不写成实测 0/100
-- 场景配置：`stack_blocks_two` 常规场景使用各评测任务的 Easy 配置；随机化场景使用 `demo_randomized_depth_20260924`，启用随机背景、杂物桌面、桌面高度与灯光扰动。`hanging_mug` Easy 使用 `depth_master_clean`
-- 随机化场景会跳过未通过 expert 有效性检查的种子；各单元的 100 个有效种子不保证完全相同，因此跨单元差值仅作描述性比较
+- 场景配置：`stack_blocks_two` 的统一 π0.5 重评在 Easy 使用 `depth_master_clean`，Randomized 使用 `demo_randomized_depth_20260924`；后者启用随机背景、杂物桌面、桌面高度与灯光扰动。`hanging_mug` Easy 使用 `depth_master_clean`。历史 ACT 与官方 RGB-only 模型的任务配置可能不同
+- 种子：`stack_blocks_two` 统一重评在每种场景内给两个 π0.5 架构共用固定的 100 个 expert-valid seeds；历史随机化批次不一定使用完全相同的种子集合，不能与统一批次直接合并
 
 深度环境定义：
 
@@ -19,7 +19,7 @@
 - `D1`：确定性的 RealSense D435/D405 噪声深度
 - `D3`：保留 D1 有效像素，仅使用 LingBot-Depth v0.5 填补 D1 空洞
 
-历史在线 D1/D3 部署存在 RGB/BGR 错配；第 2–3 节的 D1/D3 成绩只采用完成重评且通过运行检查的正式批次。旧值的影响范围与重评位置见第 6 节。部署 D0 不受该颜色顺序错误影响，但仍须独立通过动作执行等有效性检查。
+历史在线 D1/D3 部署存在 RGB/BGR 错配；第 2–3 节深度版 π0.5 的 `stack_blocks_two` 数值采用新统一批次，均已通过运行检查。历史颜色错误的影响范围见第 6 节。部署 D0 不受该颜色顺序错误影响，但仍须独立通过动作执行等有效性检查。
 
 ## 2. 最终部署主表
 
@@ -34,21 +34,23 @@
 | `ACT6_LINGBOT_DEPTH` | RGB ResNet18 + 冻结 LingBot-Depth v0.5 Tokens；D0 部署 | 6000 epochs | **11%** | **3%** |
 | `ACT7_DEPTH_TRANSFORMER` | RGB ResNet18 + D0 Depth Transformer Tokens | 6000 epochs | **16%** | **11%** |
 | 官方 pi0.5 JAX | 三视角 RGB + joint + prompt，全参微调；两任务分别使用 `demo_clean`、`depth_master_clean` | 20000 steps | **63%** | **21%** |
-| `PI05_RGBD4`，D0 权重 | 每视角 RGB + D0 metric depth 四通道早期融合；D0 部署 | 20000 steps | **81%** | **25%** |
-| `PI05_RGBD4`，D1 权重 | 同一四通道架构；D1 训练、D1 部署 | 20000 steps | **78%** | **24%** |
-| `PI05_RGBD4`，D3 权重 | 同一四通道架构；D3 训练、D3 部署 | 20000 steps | **79%** | **35%** |
-| `PI05_DUAL_PER_VIEW`，D0 权重 | pi0.5 + 三个独立 Depth ResNet18；D0 部署 | 20000 steps | **66%** | **28%** |
-| `PI05_DUAL_PER_VIEW`，D1 权重 | 同一双流架构；D1 训练、D0 部署 | 20000 steps | **55%** | **27%** |
-| `PI05_DUAL_PER_VIEW`，D3 权重 | 同一架构；D3 训练、D3 部署 | 20000 steps | **64%** | **24%** |
+| `PI05_RGBD4`，D0 权重 | 每视角 RGB + D0 metric depth 四通道早期融合；D0 部署 | 20000 steps | **77%** | **25%** |
+| `PI05_RGBD4`，D1 权重 | 同一四通道架构；D1 训练、D1 部署 | 20000 steps | **77%** | **24%** |
+| `PI05_RGBD4`，D3 权重 | 同一四通道架构；D3 训练、D3 部署 | 20000 steps | **77%** | **35%** |
+| `PI05_DUAL_PER_VIEW`，D0 权重 | pi0.5 + 三个独立 Depth ResNet18；D0 部署 | 20000 steps | **55%** | **28%** |
+| `PI05_DUAL_PER_VIEW`，D1 权重 | 同一双流架构；D1 训练、D0 部署 | 20000 steps | **56%** | **27%** |
+| `PI05_DUAL_PER_VIEW`，D3 权重 | 同一架构；D3 训练、D3 部署 | 20000 steps | **65%** | **24%** |
 | LingBot-VLA 2.0 | Qwen3-VL-4B + MoE Action Expert；三视角 RGB + joint + prompt | 30000 steps | **65%** | **14%** |
 
-两列使用不同任务数据与种子，仅便于查阅，不能作为同任务泛化差值。`ACT3_DUAL_PER_VIEW` 的 `stack_blocks_two` 与 `hanging_mug` 成绩来自各自训练的不同权重；后者使用新训练的 2-worker D0 权重。LingBot-VLA 2.0 使用 MoGe/LingBot-Depth 和 DINO-Video 提供训练期几何与时序蒸馏监督，但本次部署不直接读取 RoboTwin GT Depth 通道。
+两列使用不同任务数据与种子，仅便于查阅，不能作为同任务泛化差值。`stack_blocks_two` 的两种深度版 π0.5 成绩来自同口径 36 项重评；ACT、官方 RGB-only π0.5 和 LingBot-VLA 2.0 为各自历史正式结果，不能仅凭此表作严格架构消融。`ACT3_DUAL_PER_VIEW` 的两个任务来自不同权重；后者使用新训练的 2-worker D0 权重。LingBot-VLA 2.0 使用 MoGe/LingBot-Depth 和 DINO-Video 提供训练期几何与时序蒸馏监督，但本次部署不直接读取 RoboTwin GT Depth 通道。
+
+**同为 D0 训练 + D0 部署时：**`stack_blocks_two` 统一 π0.5 重评中，`PI05_RGBD4` 在 Easy 为 **77/100**，高于 `PI05_DUAL_PER_VIEW` 的 **55/100**；在 Randomized 为 **24/100**，高于 **21/100**。Easy 逐 seed 配对的独占成功数为四通道 27、双流 5（双侧精确 McNemar `p ≈ 0.00011`）；Randomized 为 11、8（`p ≈ 0.65`），不能把后者的 3 个百分点当作明确优势。这些检验未覆盖多次训练的变异。`hanging_mug` Easy 则是双流 **28/100** 高于四通道 **25/100**。ACT 八架构内部的 D0 最优分别为 `stack_blocks_two` 的 `ACT3_DUAL_PER_VIEW` **31/100** 和 `hanging_mug` 的 `ACT1_EARLY_RGBD` **16/100**。不同模型家族和任务不要合并排名。
 
 ## 3. SOTA模型架构在不同深度环境的表现
 
 ### 常规场景：ACT 与 π0.5
 
-任务为 `stack_blocks_two`。ACT3 与深度版 π0.5 的各自部署矩阵均使用 `100000–100099` 共 100 个有效种子；所有 D1/D3 部署格采用完成颜色通道修正后的正式成绩。
+任务为 `stack_blocks_two`。两种深度版 π0.5 在同一 `depth_master_clean` 配置、同一批 `100000–100099` 种子和相同评测协议下完成 **18/18 项 Easy 重评**；每格 100 轮，检查了逐 seed 结果、prompt、深度输入和动作运动。ACT3 与官方 RGB-only π0.5 为历史参考，协议或任务配置并不完全相同，不纳入这两种深度版 π0.5 的严格架构排名。
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
@@ -56,31 +58,42 @@
 | `ACT3_DUAL_PER_VIEW` | D1 RealSense noise | **16%** | **24%** | **16%** |
 | `ACT3_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **19%** | **12%** | **20%** |
 | 官方 pi0.5 JAX | RGB-only；`demo_clean` | **63%** | **63%** | **63%** |
-| `PI05_RGBD4` | D0 clean GT | **81%** | **76%** | **80%** |
-| `PI05_RGBD4` | D1 RealSense noise | **79%** | **78%** | **79%** |
-| `PI05_RGBD4` | D3 LingBot sensor-fused | **73%** | **75%** | **79%** |
-| `PI05_DUAL_PER_VIEW` | D0 clean GT | **66%** | **57%** | **56%** |
-| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **55%** | **60%** | **58%** |
-| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **59%** | **61%** | **64%** |
+| `PI05_RGBD4` | D0 clean GT | **77%** | **80%** | **81%** |
+| `PI05_RGBD4` | D1 RealSense noise | **79%** | **77%** | **77%** |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | **79%** | **77%** | **77%** |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | **55%** | **55%** | **58%** |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **56%** | **59%** | **61%** |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **64%** | **66%** | **65%** |
 
-官方 pi0.5 JAX **仅实际评测 RGB-only 输入 63/100**；D1、D3 两列借用 D0 的成功率作为同一 RGB-only 基线的展示值，**不是两次独立评测**，不能据此推断深度处理对它的影响。官方 JAX 的 AutoDL 正式日志位于 `state/autodl_pi05_official_eval/formal.log`，完成标志为同目录 `PI05_EVAL_COMPLETE`。`demo_clean` 与深度版 `demo_clean_depth` 并非完全相同配置，跨模型比较时须注明。
+官方 pi0.5 JAX **仅实际评测 RGB-only 输入 63/100**；D1、D3 两列借用 D0 的成功率，**不是两次独立评测**。官方 JAX 的 AutoDL 正式日志位于 `state/autodl_pi05_official_eval/formal.log`，完成标志为同目录 `PI05_EVAL_COMPLETE`。其 `demo_clean` 与统一深度版的 `depth_master_clean` 并非相同配置，不能把两者差值单独归因于深度。统一重评记录位于 AutoDL `evaluations/stack_matched_eval_20261008/state/`。
 
 ### 随机化场景：ACT 与 π0.5
 
-任务为 `stack_blocks_two`，配置为 `demo_randomized_depth_20260924`。ACT0–ACT7 的汇总成功率按本次确认的正式评测结论填写；各架构、权重及训练深度组合的逐项记录不在这一行展开。
+任务为 `stack_blocks_two`，配置为 `demo_randomized_depth_20260924`。两种深度版 π0.5 共用同一批 100 个 expert-valid seeds，完成 **18/18 项 Randomized 重评**。ACT0–ACT7 与官方 RGB-only π0.5 为历史参考，未纳入这组统一深度版架构排名；ACT 汇总行不展开逐项权重组合。
 
 | 模型架构 | 训练深度环境 | 部署 D0 | 部署 D1 | 部署 D3 |
 | --- | --- | ---: | ---: | ---: |
 | `ACT0–ACT7` | D0/D1/D3；ACT0 为 RGB-only | **0%** | **0%** | **0%** |
 | 官方 pi0.5 JAX | RGB-only | **21%** | **21%** | **21%** |
-| `PI05_RGBD4` | D0 clean GT | **29%** | **29%** | **28%** |
-| `PI05_RGBD4` | D1 RealSense noise | **28%** | **30%** | **30%** |
-| `PI05_RGBD4` | D3 LingBot sensor-fused | **29%** | **37%** | **32%** |
-| `PI05_DUAL_PER_VIEW` | D0 clean GT | **15%** | **18%** | **24%** |
-| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **16%** | **18%** | **15%** |
-| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **17%** | **21%** | **24%** |
+| `PI05_RGBD4` | D0 clean GT | **24%** | **25%** | **27%** |
+| `PI05_RGBD4` | D1 RealSense noise | **32%** | **28%** | **34%** |
+| `PI05_RGBD4` | D3 LingBot sensor-fused | **28%** | **31%** | **27%** |
+| `PI05_DUAL_PER_VIEW` | D0 clean GT | **21%** | **20%** | **21%** |
+| `PI05_DUAL_PER_VIEW` | D1 RealSense noise | **19%** | **18%** | **18%** |
+| `PI05_DUAL_PER_VIEW` | D3 LingBot sensor-fused | **24%** | **20%** | **22%** |
 
-ACT0 只读取 RGB，因此汇总行中的 D0/D1/D3 不表示 ACT0 使用深度训练。官方 pi0.5 JAX 只独立评测 RGB-only 输入，其 D1、D3 列复用 D0 的 **21/100**，并非独立评测。随机化场景不同批次的 expert 有效性筛选可能造成种子集合差异，跨批次差值仅作描述性比较。
+ACT0 只读取 RGB，因此汇总行中的 D0/D1/D3 不表示 ACT0 使用深度训练。官方 pi0.5 JAX 只独立评测 RGB-only 输入，其 D1、D3 列复用 D0 的 **21/100**，并非独立评测。统一重评的六个深度训练/部署条件给两个 π0.5 架构使用完全相同的种子与 prompt；跨历史批次的差值仍仅作描述性比较。
+
+### 统一重评：各部署深度的最优配置
+
+下表只在**同一任务场景内**从 `PI05_RGBD4` 和 `PI05_DUAL_PER_VIEW` 的统一重评中选择，不把 ACT、官方 RGB-only π0.5 或另一任务混入排名。箭头表示训练深度 → 部署深度；同分保留并列。
+
+| `stack_blocks_two` 场景 | 部署 D0 最优 | 部署 D1 最优 | 部署 D3 最优 |
+| --- | --- | --- | --- |
+| Easy | `PI05_RGBD4` D1→D0、D3→D0，均 **79%** | `PI05_RGBD4` D0→D1，**80%** | `PI05_RGBD4` D0→D3，**81%** |
+| Randomized | `PI05_RGBD4` D1→D0，**32%** | `PI05_RGBD4` D3→D1，**31%** | `PI05_RGBD4` D1→D3，**34%** |
+
+**严格 D0 对照：**仅固定 D0 训练且 D0 部署时，Easy 中四通道 **77%** 对双流 **55%**；Randomized 中四通道 **24%** 对双流 **21%**。不能据此断言 D3 修复总会提高成功率：最优训练深度和最优部署深度随场景变化，且每格只有 100 轮，未做多次训练或显著性检验。全部 36 项均有 `FORMAL_COMPLETE`、逐 seed 结果和运行校验，种子清单 SHA256：Easy `35c1162f576007e5713480601f1a2d24c87579fe8f9924f95105243e864aa9f6`，Randomized `f3fe88629c74b531648c8fb8a4b414f1a3677b82d7bac3c15bc31edc949ea5b7`。动作探针验证每轮首个动作确实引起关节运动，但现有日志不能逐步证明后续每次 TOPP 均成功。
 
 ## 4. `hanging_mug` Easy：ACT 与 π0.5
 
@@ -171,9 +184,18 @@ LingBot-VLA 2.0：**5/100 = 5%**。
 
 官方 pi0.5 JAX 仅实际评测 RGB-only 输入 **17/100**；D1、D3 两列复用同一结果，**不是独立评测**。原 D0 双流记录位于 AutoDL `evaluations/hanging_mug_pi05_d0_matrix_20261001/state/`，与 Easy 表共用同一权重 SHA256；新增记录位于上节列出的三个独立批次目录。ACT 的提前停止批次没有完整覆盖 100 个种子，比较时须保留其实际评测轮数。
 
+`hanging_mug` 的现有 π0.5 深度矩阵中，各部署深度的最高已完成成功率如下；这是**该任务自己的历史评测协议**，不与上面的 `stack_blocks_two` 统一重评混排：
+
+| 场景 | 部署 D0 最优 | 部署 D1 最优 | 部署 D3 最优 |
+| --- | --- | --- | --- |
+| Easy | `PI05_RGBD4` D3→D0，**30%** | `PI05_DUAL_PER_VIEW` D0→D1，**34%** | `PI05_RGBD4` D3→D3，**35%** |
+| Randomized | `PI05_RGBD4` D1→D0，**25%** | `PI05_DUAL_PER_VIEW` D3→D1，**22%** | `PI05_RGBD4` D3→D3，**22%** |
+
+只限定 D0 训练 + D0 部署时，`hanging_mug` Easy 的双流 **28%** 高于四通道 **25%**，与 `stack_blocks_two` 的架构排序相反。各格为 100 轮单次评测；“最优”仅指本表观测最高值，不代表统计显著或普适最优。
+
 ## 6. 受影响的评测配置与重评位置
 
-下表按**唯一模型/训练输入/场景/部署输入**计数；历史主表中的 π0.5 D3→D3 旧 68% 与常规场景表是同一项，不另算一次。原表中常规 ACT3 有 6 格、常规 π0.5 有 6 格、随机化 π0.5 有 6 格，合计 **18 格旧 D1/D3 成绩无效**；这 18 格均已取得修正后的正式成绩。旧值仅供追溯，不参与排名。
+下表是 **RGB/BGR 错配修复的历史审计记录**，不是第 3 节统一重评的最新成功率表。它按**唯一模型/训练输入/场景/部署输入**计数；历史主表中的 π0.5 D3→D3 旧 68% 与常规场景表是同一项，不另算一次。原表中常规 ACT3 有 6 格、常规 π0.5 有 6 格、随机化 π0.5 有 6 格，合计 **18 格旧 D1/D3 成绩无效**；这 18 格后来都取得修正后的正式成绩。第 3 节的 π0.5 采用更新的同口径 36 项批次。旧值仅供追溯，不参与排名。
 
 | 场景与模型权重 | 受影响部署输入及旧记录 | 修复版重评位置 |
 | --- | --- | --- |
